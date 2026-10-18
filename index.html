@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aivaro Marketing Agent</title>
+  <style>
+    :root { --orange:#f47721; --ink:#242424; --muted:#666; --line:#eee; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#fffaf6; color:var(--ink); font-family:Tahoma,Arial,sans-serif; line-height:1.8; }
+    main { max-width:850px; margin:24px auto; padding:16px; }
+    header { background:white; border:1px solid var(--line); border-radius:18px; padding:22px; margin-bottom:16px; }
+    h1 { margin:0; font-size:25px; } h1 span { color:var(--orange); }
+    .sub { color:var(--muted); margin:6px 0 0; }
+    section { background:white; border:1px solid var(--line); border-radius:18px; padding:20px; margin:14px 0; }
+    label { display:block; font-weight:bold; margin:12px 0 5px; }
+    input, select, textarea { width:100%; border:1px solid #ddd; border-radius:10px; padding:11px; font:inherit; background:white; }
+    textarea { min-height:85px; resize:vertical; }
+    button { border:0; border-radius:10px; padding:11px 16px; font:inherit; cursor:pointer; }
+    .primary { background:var(--orange); color:white; font-weight:bold; width:100%; margin-top:16px; }
+    .secondary { background:#fff0e5; color:#9a4200; }
+    .status { padding:10px 12px; border-radius:10px; background:#fff5ec; margin-top:12px; }
+    .result { white-space:pre-wrap; border:1px solid var(--line); border-radius:12px; padding:14px; margin:10px 0; overflow-wrap:anywhere; }
+    .result h3 { margin:0 0 8px; color:#b9570b; }
+    .result p { margin:0; }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .hidden { display:none; }
+    footer { color:var(--muted); font-size:13px; text-align:center; padding:12px; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1><span>🟠 Aivaro</span> Marketing Agent</h1>
+    <p class="sub">دستیار تولید محتوای تبلیغاتی برای کسب‌وکارهای کوچک</p>
+  </header>
+
+  <section>
+    <h2>اطلاعات کسب‌وکار</h2>
+    <label for="business">نام کسب‌وکار</label>
+    <input id="business" maxlength="100" placeholder="مثلاً کافه نارنج">
+    <label for="type">نوع فعالیت</label>
+    <input id="type" maxlength="150" placeholder="مثلاً کافه و شیرینی‌پزی">
+    <label for="audience">مخاطب هدف</label>
+    <input id="audience" maxlength="250" placeholder="مثلاً دانشجویان و علاقه‌مندان به کافه‌گردی">
+    <label for="goal">هدف تبلیغاتی</label>
+    <select id="goal">
+      <option value="معرفی محصول یا خدمت جدید">معرفی محصول یا خدمت جدید</option>
+      <option value="افزایش فروش">افزایش فروش</option>
+      <option value="افزایش آگاهی از برند">افزایش آگاهی از برند</option>
+      <option value="جذب دنبال‌کننده">جذب دنبال‌کننده</option>
+      <option value="معرفی پیشنهاد ویژه">معرفی پیشنهاد ویژه</option>
+    </select>
+    <label for="notes">توضیحات اضافه (اختیاری)</label>
+    <textarea id="notes" maxlength="1200" placeholder="ویژگی محصول، لحن موردنظر یا نکات مهم..."></textarea>
+    <button id="generate" class="primary">تولید محتوای تبلیغاتی</button>
+    <div id="status" class="status hidden" role="status"></div>
+  </section>
+
+  <section id="outputs" class="hidden">
+    <h2>خروجی تبلیغاتی</h2>
+    <div id="cards"></div>
+    <div id="approval" class="hidden">
+      <label for="revision">اگر اصلاحی می‌خواهید، اینجا بنویسید</label>
+      <textarea id="revision" maxlength="1000" placeholder="مثلاً لحن را صمیمی‌تر کن و ایده دوم را نگه دار."></textarea>
+      <div class="actions">
+        <button id="revise" class="secondary">اصلاح محتوا</button>
+        <button id="approve" class="secondary">تأیید و نهایی‌سازی</button>
+        <button id="copyAll" class="secondary">کپی همه خروجی‌ها</button>
+      </div>
+    </div>
+  </section>
+  <footer>نسخه اولیه — برای استفاده عمومی، محدودیت دسترسی و کنترل هزینه باید تنظیم شود.</footer>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let latest = null;
+function showStatus(message) { $("status").textContent = message; $("status").classList.remove("hidden"); }
+function render(data) {
+  latest = data;
+  $("cards").innerHTML = "";
+  const sections = [
+    ["ideas","۳ ایده تبلیغاتی"],["adCopy","متن تبلیغاتی"],["video","سناریوی ویدیوی ۱۵ ثانیه‌ای"],["caption","کپشن اینستاگرام و دعوت به اقدام"]
+  ];
+  sections.forEach(([key,title]) => {
+    const wrap = document.createElement("div"); wrap.className = "result";
+    const h = document.createElement("h3"); h.textContent = title;
+    const p = document.createElement("p"); p.textContent = data[key] || "خروجی موجود نیست.";
+    const b = document.createElement("button"); b.className = "secondary"; b.textContent = "کپی این بخش";
+    b.addEventListener("click", async () => { try { await navigator.clipboard.writeText(p.textContent); showStatus("متن کپی شد."); } catch(e) { showStatus("کپی خودکار در این مرورگر در دسترس نیست؛ متن را دستی انتخاب و کپی کنید."); } });
+    wrap.append(h,p,b); $("cards").appendChild(wrap);
+  });
+  $("outputs").classList.remove("hidden"); $("approval").classList.remove("hidden");
+}
+async function requestContent(mode) {
+  const payload = {
+    mode,
+    business: $("business").value.trim(),
+    type: $("type").value.trim(),
+    audience: $("audience").value.trim(),
+    goal: $("goal").value,
+    notes: $("notes").value.trim(),
+    previous: latest,
+    revision: $("revision").value.trim()
+  };
+  if (!payload.business || !payload.type || !payload.audience) { showStatus("لطفاً نام کسب‌وکار، نوع فعالیت و مخاطب هدف را وارد کنید."); return; }
+  $("generate").disabled = true; $("revise").disabled = true;
+  showStatus("در حال تولید محتوا با هوش مصنوعی؛ لطفاً کمی صبر کنید...");
+  try {
+    const response = await fetch("/api/generate", {
+      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "درخواست ناموفق بود.");
+    render(data);
+    showStatus("محتوا تولید شد. قبل از استفاده، اطلاعات و ادعاهای تبلیغاتی را بررسی کنید.");
+  } catch(err) {
+    showStatus("نتوانستم محتوا تولید کنم: " + err.message + " اگر این صفحه را با دوبار کلیک از روی فایل باز کرده‌اید، API اجرا نمی‌شود؛ باید پروژه روی میزبانی وب منتشر شود.");
+  } finally { $("generate").disabled = false; $("revise").disabled = false; }
+}
+$("generate").addEventListener("click", () => requestContent("generate"));
+$("revise").addEventListener("click", () => {
+  if (!$("revision").value.trim()) { showStatus("اول اصلاح موردنظرتان را بنویسید."); return; }
+  requestContent("revise");
+});
+$("approve").addEventListener("click", () => {
+  if (!latest) return;
+  showStatus("محتوا برای بررسی شما نهایی شد. پیش از ارسال به مشتری، متن را بازبینی کنید.");
+  $("copyAll").focus();
+});
+$("copyAll").addEventListener("click", async () => {
+  if (!latest) return;
+  const all = "۳ ایده تبلیغاتی\n"+latest.ideas+"\n\nمتن تبلیغاتی\n"+latest.adCopy+"\n\nسناریوی ویدیو\n"+latest.video+"\n\nکپشن و دعوت به اقدام\n"+latest.caption;
+  try { await navigator.clipboard.writeText(all); showStatus("همه خروجی‌ها کپی شدند."); }
+  catch(e) { showStatus("کپی خودکار در این مرورگر در دسترس نیست؛ بخش‌ها را جداگانه کپی کنید."); }
+});
+</script>
+</body>
+</html>
