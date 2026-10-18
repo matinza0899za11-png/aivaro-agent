@@ -4,8 +4,8 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "فقط درخواست POST مجاز است." });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: "تنظیمات سرور کامل نیست؛ مدیر باید کلید API را تنظیم کند." });
+  const apiKey = process.env.GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: "تنظیمات سرور کامل نیست؛ کلید API را تنظیم کنید." });
 
   const body = req.body || {};
   const clean = (value, max) => typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -28,32 +28,26 @@ export default async function handler(req, res) {
     : `برای این کسب‌وکار محتوا بساز.\nنام: ${business}\nفعالیت: ${type}\nمخاطب: ${audience}\nهدف: ${goal}\nتوضیحات: ${notes || "ارائه نشده"}`;
 
   try {
-    const upstream = await fetch("https://api.anthropic.com/v1/messages", {
+    const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01"
-      },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || "claude-3-5-haiku-latest",
-        max_tokens: 1800,
-        system,
-        messages: [{ role: "user", content: user }]
+        systemInstruction: { parts: [{ text: system }] },
+        contents: [{ role: "user", parts: [{ text: user }] }],
+        generationConfig: { responseMimeType: "application/json" }
       })
     });
 
     const result = await upstream.json();
     if (!upstream.ok) {
-      console.error("Anthropic API error status:", upstream.status);
-      return res.status(502).json({ error: "سرویس هوش مصنوعی در دسترس نیست یا تنظیمات API مشکل دارد. مدیر باید وضعیت حساب و کلید را بررسی کند." });
+      console.error("Gemini API error status:", upstream.status, result);
+      return res.status(502).json({ error: "سرویس هوش مصنوعی در دسترس نیست یا کلید API مشکل دارد." });
     }
-    const raw = (result.content || []).filter(part => part.type === "text").map(part => part.text).join("\n").trim();
+    const raw = result?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
     const normalized = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
     let parsed;
     try { parsed = JSON.parse(normalized); }
     catch {
-      console.error("Model response was not valid JSON.");
       return res.status(502).json({ error: "پاسخ هوش مصنوعی در قالب مورد انتظار نبود؛ دوباره تلاش کنید." });
     }
     const output = {};
@@ -63,7 +57,6 @@ export default async function handler(req, res) {
     }
     return res.status(200).json(output);
   } catch (error) {
-    console.error("Request failed:", error && error.name ? error.name : "unknown");
     return res.status(502).json({ error: "ارتباط با سرویس برقرار نشد؛ اتصال اینترنت را بررسی و دوباره تلاش کنید." });
   }
-      }
+}
