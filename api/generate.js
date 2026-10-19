@@ -28,9 +28,12 @@ export default async function handler(req, res) {
     : `برای این کسب‌وکار محتوا بساز.\nنام: ${business}\nفعالیت: ${type}\nمخاطب: ${audience}\nهدف: ${goal}\nتوضیحات: ${notes || "ارائه نشده"}`;
 
   try {
-    const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { 
+        "content-type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: "user", parts: [{ text: user }] }],
